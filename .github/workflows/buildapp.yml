@@ -113,33 +113,17 @@ jobs:
       - name: Prepare YouTube iPA
         id: prepare_youtube
         run: |
-          # Download the IPA using curl, bypassing the Google Drive confirmation
-          curl -L "https://drive.google.com/uc?export=download&id=$(echo $YOUTUBE_URL | sed 's#.*id=\([^&]*\).*#\1#')" -o main/YouTube.ipa
-          
-          # Verify the download by checking the size or any other criteria you need
-          if [ ! -f main/YouTube.ipa ]; then
-            echo "Download failed!"
-            exit 1
-          fi
-          
-          # Unzip or process the IPA file if needed
+          wget "$YOUTUBE_URL" --no-verbose -O main/YouTube.ipa
           cd ${{ github.workspace }}/main
-          
-          # If needed, you can move and unzip IPA content (but .ipa is already a compressed app bundle)
-          # mv YouTube.ipa YouTube.zip
-          # unzip -q YouTube.zip
-
-          # If you only need the IPA, no unzipping is necessary. The file is typically used as-is.
-
-          # Get the YouTube version from the IPA
+          mv YouTube.ipa YouTube.zip
+          unzip -q YouTube.zip
           youtube_version=$(defaults read "$(pwd)/Payload/YouTube.app/Info" CFBundleVersion)
           echo "==> YouTube v$youtube_version downloaded!"
-          
-          # Set the version in the Makefile for future steps
           sed -i '' "17s#.*#YOUTUBE_VERSION = ${youtube_version}#g" Makefile
           echo "youtube_version=${youtube_version}" >> $GITHUB_OUTPUT
 
         env:
+          THEOS: ${{ github.workspace }}/theos
           YOUTUBE_URL: ${{ inputs.decrypted_youtube_url }}
 
       - name: Fix compiling & Build Package
